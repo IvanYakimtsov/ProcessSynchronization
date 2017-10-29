@@ -55,8 +55,8 @@ void close_process_data(Process_data *process_data) {
 
 
 
-File_mapping * initialise_file_mapping() {
-    HANDLE hFile = CreateFile("File", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+File_mapping * initialise_file_mapping(char *file_name) {
+    HANDLE hFile = CreateFile(file_name, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE) {
         print_err_message("Create file err!");
         return NULL;
@@ -80,13 +80,6 @@ File_mapping * initialise_file_mapping() {
     if(dataPtr == nullptr) {
         print_err_message("Create data prt err!");
         CloseHandle(hMapping);
-        CloseHandle(hFile);
-        return nullptr;
-    }
-
-    HANDLE hMapping = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-    if(hMapping == NULL) {
-        std::cerr << "Create mapping err!" << std::endl;
         CloseHandle(hFile);
         return nullptr;
     }
@@ -124,7 +117,7 @@ int main() {
 
     Process_data *console_process_data = initialize_process_data();
     Process_data *file_process_data = initialize_process_data();
-
+    
     if (!create_process(CONSOLE_PROCESS_NAME, console_process_data)) {
         print_err_message(CREATE_PROCESS_ERR);
     }
