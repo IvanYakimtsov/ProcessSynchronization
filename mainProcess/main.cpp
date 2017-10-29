@@ -19,7 +19,7 @@ int main() {
     Sleep(1000);
 
     if( !CreateProcess( NULL, // Не используется имя модуля
-                        "D:\\ProjectsC\\MultiProcess\\consoleProcess\\cmake-build-debug\\consoleProcess.exe",   // Командная строка
+                        "D:\\ProjectsC\\ProcessSynchronization\\consoleProcess\\cmake-build-debug\\consoleProcess.exe",   // Командная строка
                         NULL,                 // Дескриптор процесса не наследуется.
                         NULL,                 // Дескриптор потока не наследуется.
                         FALSE,                // Установка описателей наследования
