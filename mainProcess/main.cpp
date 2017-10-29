@@ -12,6 +12,13 @@ typedef struct Process_data {
     PROCESS_INFORMATION process_information;
 } Process_data;
 
+typedef struct File_mapping {
+    HANDLE hFile;
+    HANDLE hMapping;
+    size_t file_size;
+    unsigned char *data_prt;
+};
+
 LPSTR getProcessPath(std::string process_name) {
     std::stringstream stream;
     char buffer[MAX_PATH];
@@ -25,12 +32,12 @@ LPSTR getProcessPath(std::string process_name) {
 
 WINBOOL create_process(std::string process_name, Process_data *process_data) {
     return CreateProcess( NULL, getProcessPath(process_name), NULL, NULL, FALSE, 0, NULL, NULL,
-                          &process_data->startupinfo,
-                          &process_data->process_information);
+                          &(process_data->startupinfo),
+                          &(process_data->process_information));
 }
 
 Process_data * initialize_process_data() {
-    Process_data *process_data = new Process_data;
+    Process_data *process_data = (Process_data*) malloc(sizeof(Process_data));
     ZeroMemory(&process_data->startupinfo, sizeof(process_data->startupinfo));
     ZeroMemory(&process_data->process_information, sizeof(process_data->process_information));
     process_data->startupinfo.cb = sizeof(process_data->startupinfo);
@@ -44,6 +51,61 @@ void print_err_message(std::string message) {
 void close_process_data(Process_data *process_data) {
     CloseHandle(process_data->process_information.hProcess);
     CloseHandle(process_data->process_information.hThread);
+}
+
+
+
+File_mapping * initialise_file_mapping() {
+    HANDLE hFile = CreateFile("File", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFile == INVALID_HANDLE_VALUE) {
+        print_err_message("Create file err!");
+        return NULL;
+    }
+
+    DWORD dw_file_size = GetFileSize(hFile, NULL);
+    if (dw_file_size == INVALID_FILE_SIZE) {
+        print_err_message("Get file size err!");
+        return NULL;
+    }
+
+    HANDLE hMapping = CreateFileMapping(hFile, nullptr, PAGE_READONLY, 0, 0,
+                                        nullptr);
+    if(hMapping == nullptr) {
+        print_err_message("Create file mapping err!");
+        CloseHandle(hFile);
+        return NULL;
+    }
+
+    unsigned char* dataPtr = (unsigned char*)MapViewOfFile(hMapping, FILE_MAP_READ, 0, 0, dw_file_size);
+    if(dataPtr == nullptr) {
+        print_err_message("Create data prt err!");
+        CloseHandle(hMapping);
+        CloseHandle(hFile);
+        return nullptr;
+    }
+
+    HANDLE hMapping = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+    if(hMapping == NULL) {
+        std::cerr << "Create mapping err!" << std::endl;
+        CloseHandle(hFile);
+        return nullptr;
+    }
+
+    File_mapping* mapping = (File_mapping*) malloc(sizeof(File_mapping));
+    if(mapping == nullptr) {
+
+        UnmapViewOfFile(dataPtr);
+        CloseHandle(hMapping);
+        CloseHandle(hFile);
+        return nullptr;
+    }
+
+    mapping->hFile = hFile;
+    mapping->hMapping = hMapping;
+    mapping->data_prt = dataPtr;
+    mapping->file_size = (size_t)dw_file_size;
+
+    return mapping;
 }
 
 
