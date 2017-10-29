@@ -19,27 +19,32 @@ typedef struct File_mapping {
     unsigned char *data_prt;
 };
 
-LPSTR getProcessPath(std::string process_name) {
-    std::stringstream stream;
+std::string replaceString( std::string subject, std::string const & search, std::string const & replace ) {
+    size_t pos = 0;
+    while ( ( pos = subject.find( search, pos ) ) != std::string::npos ) {
+        subject.replace( pos, search.length(), replace );
+        pos += replace.length();
+    }
+    return subject;
+}
+
+std::string getProcessPath(std::string process_name) {
     char buffer[MAX_PATH];
     GetModuleFileName(NULL,buffer, sizeof(buffer));
-    stream << buffer;
-    std::string path = stream.str();
-    unsigned long position = path.find(MAIN_PROCESS_NAME);
-    path = path.replace(position, path.length(), process_name + "\\cmake-build-debug\\" + process_name + ".exe");
-    return const_cast<char *>(path.c_str());
+    std::string path = replaceString(std::string(buffer), MAIN_PROCESS_NAME, process_name);
+    return path;
 }
 
 WINBOOL create_process(std::string process_name, Process_data *process_data) {
-    return CreateProcess( NULL, getProcessPath(process_name), NULL, NULL, FALSE, 0, NULL, NULL,
+    return CreateProcess( NULL, (char*) getProcessPath(process_name).c_str(), NULL, NULL, FALSE, 0, NULL, NULL,
                           &(process_data->startupinfo),
                           &(process_data->process_information));
 }
 
-Process_data * initialize_process_data() {
+Process_data *initialize_process_data() {
     Process_data *process_data = (Process_data*) malloc(sizeof(Process_data));
-    ZeroMemory(&process_data->startupinfo, sizeof(process_data->startupinfo));
-    ZeroMemory(&process_data->process_information, sizeof(process_data->process_information));
+    ZeroMemory(&(process_data->startupinfo), sizeof(process_data->startupinfo));
+    ZeroMemory(&(process_data->process_information), sizeof(process_data->process_information));
     process_data->startupinfo.cb = sizeof(process_data->startupinfo);
     return process_data;
 }
@@ -117,7 +122,7 @@ int main() {
 
     Process_data *console_process_data = initialize_process_data();
     Process_data *file_process_data = initialize_process_data();
-    
+
     if (!create_process(CONSOLE_PROCESS_NAME, console_process_data)) {
         print_err_message(CREATE_PROCESS_ERR);
     }
@@ -126,14 +131,21 @@ int main() {
         print_err_message(CREATE_PROCESS_ERR);
     }
 
+    HANDLE file_mapping = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(int), "File.txt");
 
-    // Р–РґР°С‚СЊ РѕРєРѕРЅС‡Р°РЅРёСЏ РґРѕС‡РµСЂРЅРµРіРѕ РїСЂРѕС†РµСЃСЃР°
+    LPVOID view_mapping = MapViewOfFile(file_mapping,FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
+
+    int number;
+    // Ждать окончания дочернего процесса
    // WaitForSingleObject( ProcInfo.hProcess, INFINITE );
     //WaitForSingleObject( eventFromConsoleChild, INFINITE );
     int iteration = 0;
     while(iteration < 10){
         std::cout<<"new iteration"<<std::endl;
-        //TODO: add shared buffer here
+        number = (rand());
+        CopyMemory(view_mapping, &number, sizeof(int));
+        std::cout << "P -- " <<  *static_cast<LPCWSTR>(view_mapping) << std::endl;
+
         SetEvent( eventToConsoleChild );
         SetEvent( eventToFileChild );
         WaitForMultipleObjects(2, childEvents,TRUE,INFINITE);
