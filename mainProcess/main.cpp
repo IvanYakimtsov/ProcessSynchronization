@@ -1,44 +1,52 @@
 #include <iostream>
 #include <windows.h>
-#include <stdio.h>
+#include <sstream>
+LPSTR getProcessPath(std::string process_name) {
+    std::stringstream stream;
+    char buffer[MAX_PATH];
+    GetModuleFileName(NULL,buffer, sizeof(buffer));
+    stream << buffer;
+    std::string path = stream.str();
+    unsigned long position = path.find("mainProcess");
+    path = path.replace(position, path.length(), process_name + "\\cmake-build-debug\\" + process_name + ".exe");
+    return const_cast<char *>(path.c_str());
+}
 
 int main() {
     HANDLE eventFromChild = CreateEvent( NULL, FALSE, FALSE, "eventFromChild");
     HANDLE eventToChild = CreateEvent( NULL, FALSE, FALSE, "eventToChild");
 
-    STARTUPINFO StartupInfo;
-    PROCESS_INFORMATION ProcInfo;
-    TCHAR CommandLine[] = TEXT("sleep");
+    STARTUPINFO startupinfo;
+    PROCESS_INFORMATION process_information;
 
+    std::cout << getProcessPath("consoleProcess");
 
-    ZeroMemory( &StartupInfo, sizeof(StartupInfo) );
-    StartupInfo.cb = sizeof(StartupInfo);
-    ZeroMemory( &ProcInfo, sizeof(ProcInfo) );
+    ZeroMemory( &startupinfo, sizeof(startupinfo) );
+    startupinfo.cb = sizeof(startupinfo);
+    ZeroMemory( &process_information, sizeof(process_information) );
 
     printf("Main process running 1000 ms\n");
     Sleep(1000);
 
-    if( !CreateProcess( NULL, // Не используется имя модуля
-                        "D:\\ProjectsC\\ProcessSynchronization\\consoleProcess\\cmake-build-debug\\consoleProcess.exe",   // Командная строка
-                        NULL,                 // Дескриптор процесса не наследуется.
-                        NULL,                 // Дескриптор потока не наследуется.
-                        FALSE,                // Установка описателей наследования
-                        0,                    // Нет флагов создания процесса
-                        NULL,                 // Блок переменных окружения родительского процесса
-                        NULL,                 // Использовать текущий каталог родительского процесса
-                        &StartupInfo,         // Указатель на структуру  STARTUPINFO.
-                        &ProcInfo )           // Указатель на структуру информации о процессе.
+    if( !CreateProcess( NULL,
+                        getProcessPath("consoleProcess"),
+                        NULL,
+                        NULL,
+                        FALSE,
+                        0,
+                        NULL,
+                        NULL,
+                        &startupinfo,
+                        &process_information )
             )
 
         printf( "CreateProcess failed.\n" );
 
     SetEvent( eventToChild );
-    // Ждать окончания дочернего процесса
-   // WaitForSingleObject( ProcInfo.hProcess, INFINITE );
+
     WaitForSingleObject( eventFromChild, INFINITE );
     printf( "Main ok.\n" );
 
-    // Закрыть описатели процесса и потока
-    CloseHandle( ProcInfo.hProcess );
-    CloseHandle( ProcInfo.hThread );
+    CloseHandle( process_information.hProcess );
+    CloseHandle( process_information.hThread );
 }
