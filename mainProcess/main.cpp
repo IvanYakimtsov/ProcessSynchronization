@@ -66,28 +66,31 @@ int main() {
     Process_data *console_process_data = initialize_process_data();
     Process_data *file_process_data = initialize_process_data();
 
-    if (!create_process(CONSOLE_PROCESS_NAME, console_process_data)) {
-        print_err_message(CREATE_PROCESS_ERR);
-    }
-
-    if (!create_process(FILE_PROCESS_NAME, file_process_data)) {
-        print_err_message(CREATE_PROCESS_ERR);
-    }
-
-
+//    if (!create_process(CONSOLE_PROCESS_NAME, console_process_data)) {
+//        print_err_message(CREATE_PROCESS_ERR);
+//    }
+//
+//    if (!create_process(FILE_PROCESS_NAME, file_process_data)) {
+//        print_err_message(CREATE_PROCESS_ERR);
+//    }
+//
     // Ждать окончания дочернего процесса
    // WaitForSingleObject( ProcInfo.hProcess, INFINITE );
     //WaitForSingleObject( eventFromConsoleChild, INFINITE );
-    int iteration = 0;
-    while(iteration < 10){
-        std::cout<<"new iteration"<<std::endl;
-        //TODO: add shared buffer here
-        SetEvent( eventToConsoleChild );
-        SetEvent( eventToFileChild );
-        WaitForMultipleObjects(2, childEvents,TRUE,INFINITE);
-        printf( "Main ok.\n" );
-        iteration++;
-    }
+    if(!create_process(CONSOLE_PROCESS_NAME, console_process_data)
+       && !create_process(FILE_PROCESS_NAME, file_process_data)){
+        int iteration = 0;
+        while(iteration < 10){
+            std::cout<<"new iteration"<<std::endl;
+            //TODO: add shared buffer here
+            SetEvent( eventToConsoleChild );
+            SetEvent( eventToFileChild );
+            WaitForMultipleObjects(2, childEvents,TRUE,INFINITE);
+            printf( "Main ok.\n" );
+            iteration++;
+        }
+
+    } else print_err_message(CREATE_PROCESS_ERR);
 
 
     close_process_data(console_process_data);
