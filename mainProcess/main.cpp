@@ -1,22 +1,24 @@
 #include <iostream>
 #include <windows.h>
-#include <stdio.h>
 
 int main() {
-    HANDLE eventFromChild = CreateEvent( NULL, FALSE, FALSE, "eventFromChild");
-    HANDLE eventToChild = CreateEvent( NULL, FALSE, FALSE, "eventToChild");
+    HANDLE eventFromConsoleChild = CreateEvent( NULL, FALSE, FALSE, "eventFromConsoleChild");
+    HANDLE eventFromFileChild = CreateEvent( NULL, FALSE, FALSE, "eventFromFileChild");
+    HANDLE eventToChild = CreateEvent( NULL, TRUE, FALSE, "eventToChild");
 
-    STARTUPINFO StartupInfo;
-    PROCESS_INFORMATION ProcInfo;
-    TCHAR CommandLine[] = TEXT("sleep");
+    HANDLE childEvents[2];
+    childEvents[0] = eventFromConsoleChild;
+    childEvents[1] = eventFromFileChild;
 
+    std::cout<<"start"<<std::endl;
 
-    ZeroMemory( &StartupInfo, sizeof(StartupInfo) );
-    StartupInfo.cb = sizeof(StartupInfo);
-    ZeroMemory( &ProcInfo, sizeof(ProcInfo) );
+    STARTUPINFO StartupInfo1;
+    PROCESS_INFORMATION ProcInfo1;
 
-    printf("Main process running 1000 ms\n");
-    Sleep(1000);
+    ZeroMemory( &StartupInfo1, sizeof(StartupInfo1) );
+    StartupInfo1.cb = sizeof(StartupInfo1);
+    ZeroMemory( &ProcInfo1, sizeof(ProcInfo1) );
+
 
     if( !CreateProcess( NULL, // Не используется имя модуля
                         "D:\\ProjectsC\\ProcessSynchronization\\consoleProcess\\cmake-build-debug\\consoleProcess.exe",   // Командная строка
@@ -26,19 +28,48 @@ int main() {
                         0,                    // Нет флагов создания процесса
                         NULL,                 // Блок переменных окружения родительского процесса
                         NULL,                 // Использовать текущий каталог родительского процесса
-                        &StartupInfo,         // Указатель на структуру  STARTUPINFO.
-                        &ProcInfo )           // Указатель на структуру информации о процессе.
-            )
+                        &StartupInfo1,         // Указатель на структуру  STARTUPINFO.
+                        &ProcInfo1 )           // Указатель на структуру информации о процессе.
+            ) printf( "CreateProcess failed.\n" );
 
-        printf( "CreateProcess failed.\n" );
 
-    SetEvent( eventToChild );
+
+    STARTUPINFO StartupInfo2;
+    PROCESS_INFORMATION ProcInfo2;
+
+
+    ZeroMemory( &StartupInfo2, sizeof(StartupInfo2) );
+    StartupInfo2.cb = sizeof(StartupInfo2);
+    ZeroMemory( &ProcInfo2, sizeof(ProcInfo2) );
+
+
+    if( !CreateProcess( NULL, // Не используется имя модуля
+                        "D:\\ProjectsC\\ProcessSynchronization\\fileProcess\\cmake-build-debug\\fileProcess.exe",   // Командная строка
+                        NULL,                 // Дескриптор процесса не наследуется.
+                        NULL,                 // Дескриптор потока не наследуется.
+                        FALSE,                // Установка описателей наследования
+                        0,                    // Нет флагов создания процесса
+                        NULL,                 // Блок переменных окружения родительского процесса
+                        NULL,                 // Использовать текущий каталог родительского процесса
+                        &StartupInfo2,         // Указатель на структуру  STARTUPINFO.
+                        &ProcInfo2 )           // Указатель на структуру информации о процессе.
+            ) printf( "CreateProcess failed.\n" );
+
+
+
     // Ждать окончания дочернего процесса
    // WaitForSingleObject( ProcInfo.hProcess, INFINITE );
-    WaitForSingleObject( eventFromChild, INFINITE );
+    //WaitForSingleObject( eventFromConsoleChild, INFINITE );
+
+    SetEvent( eventToChild );
+    WaitForMultipleObjects(2, childEvents,TRUE,INFINITE);
     printf( "Main ok.\n" );
+    ResetEvent( eventToChild );
 
     // Закрыть описатели процесса и потока
-    CloseHandle( ProcInfo.hProcess );
-    CloseHandle( ProcInfo.hThread );
+    CloseHandle( ProcInfo1.hProcess );
+    CloseHandle( ProcInfo1.hThread );
+
+    CloseHandle( ProcInfo2.hProcess );
+    CloseHandle( ProcInfo2.hThread );
 }
