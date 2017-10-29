@@ -1,6 +1,7 @@
 #include <iostream>
 #include <windows.h>
 #include <sstream>
+
 LPSTR getProcessPath(std::string process_name) {
     std::stringstream stream;
     char buffer[MAX_PATH];
@@ -13,40 +14,73 @@ LPSTR getProcessPath(std::string process_name) {
 }
 
 int main() {
-    HANDLE eventFromChild = CreateEvent( NULL, FALSE, FALSE, "eventFromChild");
-    HANDLE eventToChild = CreateEvent( NULL, FALSE, FALSE, "eventToChild");
+    HANDLE eventFromConsoleChild = CreateEvent( NULL, FALSE, FALSE, "eventFromConsoleChild");
+    HANDLE eventFromFileChild = CreateEvent( NULL, FALSE, FALSE, "eventFromFileChild");
+    HANDLE eventToChild = CreateEvent( NULL, TRUE, FALSE, "eventToChild");
 
-    STARTUPINFO startupinfo;
-    PROCESS_INFORMATION process_information;
+    HANDLE childEvents[2];
+    childEvents[0] = eventFromConsoleChild;
+    childEvents[1] = eventFromFileChild;
 
-    std::cout << getProcessPath("consoleProcess");
+    std::cout<<"start"<<std::endl;
 
-    ZeroMemory( &startupinfo, sizeof(startupinfo) );
-    startupinfo.cb = sizeof(startupinfo);
-    ZeroMemory( &process_information, sizeof(process_information) );
+    STARTUPINFO StartupInfo1;
+    PROCESS_INFORMATION ProcInfo1;
 
-    printf("Main process running 1000 ms\n");
-    Sleep(1000);
+    ZeroMemory( &StartupInfo1, sizeof(StartupInfo1) );
+    StartupInfo1.cb = sizeof(StartupInfo1);
+    ZeroMemory( &ProcInfo1, sizeof(ProcInfo1) );
 
-    if( !CreateProcess( NULL,
-                        getProcessPath("consoleProcess"),
-                        NULL,
-                        NULL,
-                        FALSE,
-                        0,
-                        NULL,
-                        NULL,
-                        &startupinfo,
-                        &process_information )
-            )
+    if( !CreateProcess( NULL, // Не используется имя модуля
+                        getProcessPath("consoleProcess"),   // Командная строка
+                        NULL,                 // Дескриптор процесса не наследуется.
+                        NULL,                 // Дескриптор потока не наследуется.
+                        FALSE,                // Установка описателей наследования
+                        0,                    // Нет флагов создания процесса
+                        NULL,                 // Блок переменных окружения родительского процесса
+                        NULL,                 // Использовать текущий каталог родительского процесса
+                        &StartupInfo1,         // Указатель на структуру  STARTUPINFO.
+                        &ProcInfo1 )           // Указатель на структуру информации о процессе.
+            ) printf( "CreateProcess failed.\n" );
 
-        printf( "CreateProcess failed.\n" );
+
+
+    STARTUPINFO StartupInfo2;
+    PROCESS_INFORMATION ProcInfo2;
+
+
+    ZeroMemory( &StartupInfo2, sizeof(StartupInfo2) );
+    StartupInfo2.cb = sizeof(StartupInfo2);
+    ZeroMemory( &ProcInfo2, sizeof(ProcInfo2) );
+
+
+    if( !CreateProcess( NULL, // Не используется имя модуля
+                        getProcessPath("fileProcess"),   // Командная строка
+                        NULL,                 // Дескриптор процесса не наследуется.
+                        NULL,                 // Дескриптор потока не наследуется.
+                        FALSE,                // Установка описателей наследования
+                        0,                    // Нет флагов создания процесса
+                        NULL,                 // Блок переменных окружения родительского процесса
+                        NULL,                 // Использовать текущий каталог родительского процесса
+                        &StartupInfo2,         // Указатель на структуру  STARTUPINFO.
+                        &ProcInfo2 )           // Указатель на структуру информации о процессе.
+            ) printf( "CreateProcess failed.\n" );
+
+
+    // Ждать окончания дочернего процесса
+   // WaitForSingleObject( ProcInfo.hProcess, INFINITE );
+    //WaitForSingleObject( eventFromConsoleChild, INFINITE );
 
     SetEvent( eventToChild );
+    WaitForMultipleObjects(2, childEvents,TRUE,INFINITE);
 
-    WaitForSingleObject( eventFromChild, INFINITE );
     printf( "Main ok.\n" );
+    ResetEvent( eventToChild );
+    
+    // Закрыть описатели процесса и потока
+    CloseHandle( ProcInfo1.hProcess );
+    CloseHandle( ProcInfo1.hThread );
 
-    CloseHandle( process_information.hProcess );
-    CloseHandle( process_information.hThread );
+    CloseHandle( ProcInfo2.hProcess );
+    CloseHandle( ProcInfo2.hThread );
 }
