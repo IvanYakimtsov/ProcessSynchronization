@@ -1,6 +1,9 @@
 #include <iostream>
 #include <windows.h>
 
+
+
+
 int main() {
     HANDLE eventFromConsoleChild = CreateEvent( NULL, FALSE, FALSE, "eventFromConsoleChild");
     HANDLE eventFromFileChild = CreateEvent( NULL, FALSE, FALSE, "eventFromFileChild");
