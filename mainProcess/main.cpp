@@ -4,7 +4,8 @@
 int main() {
     HANDLE eventFromConsoleChild = CreateEvent( NULL, FALSE, FALSE, "eventFromConsoleChild");
     HANDLE eventFromFileChild = CreateEvent( NULL, FALSE, FALSE, "eventFromFileChild");
-    HANDLE eventToChild = CreateEvent( NULL, TRUE, FALSE, "eventToChild");
+    HANDLE eventToConsoleChild = CreateEvent( NULL, FALSE, FALSE, "eventToConsoleChild");
+    HANDLE eventToFileChild = CreateEvent( NULL, FALSE, FALSE, "eventToFileChild");
 
     HANDLE childEvents[2];
     childEvents[0] = eventFromConsoleChild;
@@ -60,11 +61,18 @@ int main() {
     // Ждать окончания дочернего процесса
    // WaitForSingleObject( ProcInfo.hProcess, INFINITE );
     //WaitForSingleObject( eventFromConsoleChild, INFINITE );
+    int iteration = 0;
+    while(iteration < 10){
+        std::cout<<"new iteration"<<std::endl;
+        //TODO: add shared buffer here
+        SetEvent( eventToConsoleChild );
+        SetEvent( eventToFileChild );
+        WaitForMultipleObjects(2, childEvents,TRUE,INFINITE);
+        printf( "Main ok.\n" );
+        iteration++;
+    }
 
-    SetEvent( eventToChild );
-    WaitForMultipleObjects(2, childEvents,TRUE,INFINITE);
-    printf( "Main ok.\n" );
-    ResetEvent( eventToChild );
+
 
     // Закрыть описатели процесса и потока
     CloseHandle( ProcInfo1.hProcess );
