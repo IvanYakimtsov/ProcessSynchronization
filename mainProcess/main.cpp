@@ -5,7 +5,18 @@
 #define MAIN_PROCESS_NAME "mainProcess"
 #define CONSOLE_PROCESS_NAME "consoleProcess"
 #define FILE_PROCESS_NAME "fileProcess"
+
+#define MAPPING_FILE_NAME "File.txt"
+
+#define MAIN_PROCESS_START_MESSAGE "Main process start!\n"
 #define CREATE_PROCESS_ERR "Create process err!"
+#define ITERATION_MESSAGE "Iteration number %d\n"
+#define RANDOM_RESULT_MESSAGE "Main process -- %d\n"
+
+#define EVENT_TO_CONSOLE "eventToConsole"
+#define EVENT_TO_FILE "eventToFile"
+#define EVENT_FROM_CONSOLE "eventFromConsole"
+#define EVENT_FROM_FILE "eventFromFile"
 
 typedef struct Process_data {
     STARTUPINFO startupinfo;
@@ -43,28 +54,26 @@ Process_data *initialize_process_data() {
     return process_data;
 }
 
-void print_err_message(std::string message) {
-    std::cerr << message << std::endl;
-}
-
 void close_process_data(Process_data *process_data) {
     CloseHandle(process_data->process_information.hProcess);
     CloseHandle(process_data->process_information.hThread);
 }
 
-
+void print_err_message(std::string message) {
+    std::cerr << message << std::endl;
+}
 
 int main() {
-    HANDLE eventFromConsoleChild = CreateEvent(NULL, FALSE, FALSE, "eventFromConsoleChild");
-    HANDLE eventFromFileChild = CreateEvent(NULL, FALSE, FALSE, "eventFromFileChild");
-    HANDLE eventToConsoleChild = CreateEvent(NULL, FALSE, FALSE, "eventToConsoleChild");
-    HANDLE eventToFileChild = CreateEvent(NULL, FALSE, FALSE, "eventToFileChild");
+    HANDLE eventFromConsole = CreateEvent(NULL, FALSE, FALSE, EVENT_FROM_CONSOLE);
+    HANDLE eventFromFile = CreateEvent(NULL, FALSE, FALSE, EVENT_FROM_FILE);
+    HANDLE eventToConsole = CreateEvent(NULL, FALSE, FALSE, EVENT_TO_CONSOLE);
+    HANDLE eventToFile = CreateEvent(NULL, FALSE, FALSE, EVENT_TO_FILE);
 
     HANDLE childEvents[2];
-    childEvents[0] = eventFromConsoleChild;
-    childEvents[1] = eventFromFileChild;
+    childEvents[0] = eventFromConsole;
+    childEvents[1] = eventFromFile;
 
-    std::cout << "start" << std::endl;
+    printf(MAIN_PROCESS_START_MESSAGE);
 
     Process_data *console_process_data = initialize_process_data();
     Process_data *file_process_data = initialize_process_data();
@@ -72,30 +81,33 @@ int main() {
 
     if (create_process(CONSOLE_PROCESS_NAME, console_process_data)
         && create_process(FILE_PROCESS_NAME, file_process_data)) {
-        HANDLE file_mapping = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(int), "File.txt");
+
+        HANDLE file_mapping = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
+                                                0, sizeof(int), MAPPING_FILE_NAME);
+
         unsigned char *view_mapping = (unsigned char *) MapViewOfFile(file_mapping, FILE_MAP_READ | FILE_MAP_WRITE, 0,
                                                                       0, 0);
         int number;
-        int iteration = 0;
-        while (iteration < 10) {
-            std::cout << "new iteration" << std::endl;
+        for (int iteration = 0; iteration < 1000; iteration++) {
+            printf(ITERATION_MESSAGE, iteration);
             number = (rand());
             char *str;
             sprintf(str, "%d", number);
             CopyMemory(view_mapping, str, sizeof(int));
-            std::cout << "P -- " <<  view_mapping << std::endl;
+            printf(RANDOM_RESULT_MESSAGE, number);
 
-            SetEvent(eventToConsoleChild);
-            SetEvent(eventToFileChild);
+            SetEvent(eventToConsole);
+            SetEvent(eventToFile);
             WaitForMultipleObjects(2, childEvents, TRUE, INFINITE);
-            printf("Main ok.\n");
-            iteration++;
+            printf("----------------\n");
         }
-
 
         close_process_data(console_process_data);
         close_process_data(file_process_data);
         CloseHandle(file_mapping);
         CloseHandle(view_mapping);
-    } else print_err_message(CREATE_PROCESS_ERR);
+    } else {
+        print_err_message(CREATE_PROCESS_ERR);
+    }
+    return 0;
 }

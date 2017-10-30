@@ -3,21 +3,27 @@
 #include <fstream>
 #include <sstream>
 
+#define MAPPING_FILE_NAME "File.txt"
+#define LOG_FILE_NAME "log.txt"
+
+#define RANDOM_RESULT_MESSAGE "File process -- iteration number %d -- random number %c\n"
+
+#define EVENT_TO_FILE "eventToFile"
+#define EVENT_FROM_FILE "eventFromFile"
+
 int main() {
-    HANDLE eventFromFileChild = OpenEvent(EVENT_ALL_ACCESS, TRUE, "eventFromFileChild");
-    HANDLE eventToFileChild = OpenEvent(EVENT_ALL_ACCESS, TRUE, "eventToFileChild");
+    HANDLE eventFromFile = OpenEvent(EVENT_ALL_ACCESS, TRUE, EVENT_FROM_FILE);
+    HANDLE eventToFile = OpenEvent(EVENT_ALL_ACCESS, TRUE, EVENT_TO_FILE);
 
-    HANDLE file_mapping = OpenFileMappingA(FILE_MAP_READ, FALSE, "File.txt");
+    HANDLE file_mapping = OpenFileMappingA(FILE_MAP_READ, FALSE, MAPPING_FILE_NAME);
     unsigned char* view_mapping = (unsigned char *) MapViewOfFile(file_mapping, FILE_MAP_READ, 0, 0, 0);
-    std::ofstream fout;
-    fout.open("log.txt");
-
+    std::ofstream file_out (LOG_FILE_NAME);
+    int iteration = 0;
     while (true) {
-
-        WaitForSingleObject(eventToFileChild, INFINITE);
-        fout<<view_mapping<<std::endl;
-
-        SetEvent(eventFromFileChild);
+        WaitForSingleObject(eventToFile, INFINITE);
+        file_out<<"File process -- iteration number "<<iteration<<" -- RANDOM NUMBER -- "<<view_mapping<<std::endl;
+        iteration++;
+        SetEvent(eventFromFile);
     }
 
     return 0;

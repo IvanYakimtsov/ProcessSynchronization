@@ -1,23 +1,25 @@
 #include <iostream>
 #include <windows.h>
-#include <zconf.h>
-#include <codecvt>
-#include <tchar.h>
+
+#define MAPPING_FILE_NAME "File.txt"
+
+#define EVENT_TO_CONSOLE "eventToConsole"
+#define EVENT_FROM_CONSOLE "eventFromConsole"
+
+#define RANDOM_RESULT_MESSAGE "Console process -- %c\n"
+
 
 int main() {
-    HANDLE eventFromConsoleChild = OpenEvent(EVENT_ALL_ACCESS, FALSE, "eventFromConsoleChild");
-    HANDLE eventToConsoleChild = OpenEvent(EVENT_ALL_ACCESS, FALSE, "eventToConsoleChild");
+    HANDLE eventFromConsole = OpenEvent(EVENT_ALL_ACCESS, FALSE, EVENT_FROM_CONSOLE);
+    HANDLE eventToConsole = OpenEvent(EVENT_ALL_ACCESS, FALSE, EVENT_TO_CONSOLE);
 
-    HANDLE file_mapping = OpenFileMapping(FILE_MAP_READ, FALSE, "File.txt");
+    HANDLE file_mapping = OpenFileMapping(FILE_MAP_READ, FALSE, MAPPING_FILE_NAME);
     unsigned char* dataPtr = (unsigned char *) MapViewOfFile(file_mapping, FILE_MAP_READ, 0, 0, 0);
 
-
     while (true){
-        WaitForSingleObject(eventToConsoleChild,INFINITE);
-
-        std::cout << "P1 --" << dataPtr << std::endl;
-
-        SetEvent(eventFromConsoleChild);
+        WaitForSingleObject(eventToConsole,INFINITE);
+        printf(RANDOM_RESULT_MESSAGE, dataPtr);
+        SetEvent(eventFromConsole);
     }
     return 0;
 }
