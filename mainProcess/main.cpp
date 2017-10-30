@@ -64,6 +64,8 @@ void print_err_message(std::string message) {
 }
 
 int main() {
+    HANDLE semaphore = CreateSemaphore(NULL, 0, 2, "mainSemaphore");
+
     HANDLE eventFromConsole = CreateEvent(NULL, FALSE, FALSE, EVENT_FROM_CONSOLE);
     HANDLE eventFromFile = CreateEvent(NULL, FALSE, FALSE, EVENT_FROM_FILE);
     HANDLE eventToConsole = CreateEvent(NULL, FALSE, FALSE, EVENT_TO_CONSOLE);
@@ -78,6 +80,10 @@ int main() {
     Process_data *console_process_data = initialize_process_data();
     Process_data *file_process_data = initialize_process_data();
 
+    HANDLE processes[2];
+
+    processes[0] = console_process_data->process_information.hThread;
+    processes[1] = file_process_data->process_information.hThread;
 
     if (create_process(CONSOLE_PROCESS_NAME, console_process_data)
         && create_process(FILE_PROCESS_NAME, file_process_data)) {
@@ -88,6 +94,7 @@ int main() {
         unsigned char *view_mapping = (unsigned char *) MapViewOfFile(file_mapping, FILE_MAP_READ | FILE_MAP_WRITE, 0,
                                                                       0, 0);
         int number;
+
         for (int iteration = 0; iteration < 1000; iteration++) {
             printf(ITERATION_MESSAGE, iteration);
             number = (rand());
@@ -95,10 +102,10 @@ int main() {
             sprintf(str, "%d", number);
             CopyMemory(view_mapping, str, sizeof(int));
             printf(RANDOM_RESULT_MESSAGE, number);
-
-            SetEvent(eventToConsole);
-            SetEvent(eventToFile);
-            WaitForMultipleObjects(2, childEvents, TRUE, INFINITE);
+            ReleaseSemaphore(semaphore, 2, NULL);
+            Sleep(100);
+//            SetEvent(eventToConsole);
+//            SetEvent(eventToFile);
             printf("----------------\n");
         }
 
