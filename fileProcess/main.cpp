@@ -22,11 +22,14 @@ int main() {
 
     std::ofstream file_out (LOG_FILE_NAME);
     int iteration = 0;
+    bool active = true;
+    LONG count = 0;
     while (true) {
         WaitForSingleObject(semaphore, INFINITE);
-        Sleep(10);
+//        Sleep(20);
         file_out<<"File process -- iteration number "<<iteration<<" -- RANDOM NUMBER -- "<<view_mapping<<std::endl;
         iteration++;
+        ReleaseSemaphore(semaphore, 1, &count);
 //        std::cout << "FILE" << std::endl;
     }
 

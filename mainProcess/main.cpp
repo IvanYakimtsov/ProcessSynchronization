@@ -66,14 +66,14 @@ void print_err_message(std::string message) {
 int main() {
     HANDLE semaphore = CreateSemaphore(NULL, 0, 2, "mainSemaphore");
 
-    HANDLE eventFromConsole = CreateEvent(NULL, FALSE, FALSE, EVENT_FROM_CONSOLE);
-    HANDLE eventFromFile = CreateEvent(NULL, FALSE, FALSE, EVENT_FROM_FILE);
-    HANDLE eventToConsole = CreateEvent(NULL, FALSE, FALSE, EVENT_TO_CONSOLE);
-    HANDLE eventToFile = CreateEvent(NULL, FALSE, FALSE, EVENT_TO_FILE);
+//    HANDLE eventFromConsole = CreateEvent(NULL, FALSE, FALSE, EVENT_FROM_CONSOLE);
+//    HANDLE eventFromFile = CreateEvent(NULL, FALSE, FALSE, EVENT_FROM_FILE);
+//    HANDLE eventToConsole = CreateEvent(NULL, FALSE, FALSE, EVENT_TO_CONSOLE);
+//    HANDLE eventToFile = CreateEvent(NULL, FALSE, FALSE, EVENT_TO_FILE);
 
-    HANDLE childEvents[2];
-    childEvents[0] = eventFromConsole;
-    childEvents[1] = eventFromFile;
+//    HANDLE childEvents[2];
+//    childEvents[0] = eventFromConsole;
+//    childEvents[1] = eventFromFile;
 
     printf(MAIN_PROCESS_START_MESSAGE);
 
@@ -82,8 +82,8 @@ int main() {
 
     HANDLE processes[2];
 
-    processes[0] = console_process_data->process_information.hThread;
-    processes[1] = file_process_data->process_information.hThread;
+    processes[0] = console_process_data->process_information.hProcess;
+    processes[1] = file_process_data->process_information.hProcess;
 
     if (create_process(CONSOLE_PROCESS_NAME, console_process_data)
         && create_process(FILE_PROCESS_NAME, file_process_data)) {
@@ -94,7 +94,6 @@ int main() {
         unsigned char *view_mapping = (unsigned char *) MapViewOfFile(file_mapping, FILE_MAP_READ | FILE_MAP_WRITE, 0,
                                                                       0, 0);
         int number;
-
         for (int iteration = 0; iteration < 1000; iteration++) {
             printf(ITERATION_MESSAGE, iteration);
             number = (rand());
@@ -103,9 +102,10 @@ int main() {
             CopyMemory(view_mapping, str, sizeof(int));
             printf(RANDOM_RESULT_MESSAGE, number);
             ReleaseSemaphore(semaphore, 2, NULL);
-            Sleep(100);
+            WaitForSingleObject(semaphore, INFINITE);
 //            SetEvent(eventToConsole);
 //            SetEvent(eventToFile);
+//            WaitForSingleObject(semaphore, INFINITE);
             printf("----------------\n");
         }
 
