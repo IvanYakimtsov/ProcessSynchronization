@@ -29,7 +29,7 @@ int main() {
 //        Sleep(20);
         file_out<<"File process -- iteration number "<<iteration<<" -- RANDOM NUMBER -- "<<view_mapping<<std::endl;
         iteration++;
-        ReleaseSemaphore(semaphore, 1, &count);
+//        ReleaseSemaphore(semaphore, 1, &count);
 //        std::cout << "FILE" << std::endl;
     }
 

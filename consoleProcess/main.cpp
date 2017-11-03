@@ -19,7 +19,7 @@ int main() {
         WaitForSingleObject(semaphore,INFINITE);
 //        Sleep(20);
         std::cout << "Console process -- " << dataPtr << std::endl;
-        ReleaseSemaphore(semaphore, 1, NULL);
+//        ReleaseSemaphore(semaphore, 1, NULL);
 //        std::cout<<"CONSOLE"<<std::endl;
     }
     return 0;
