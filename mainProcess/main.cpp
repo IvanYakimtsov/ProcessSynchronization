@@ -1,6 +1,7 @@
 #include <iostream>
 #include <windows.h>
 #include <sstream>
+#include <time.h>
 
 #define MAIN_PROCESS_NAME "mainProcess"
 #define CONSOLE_PROCESS_NAME "consoleProcess"
@@ -66,6 +67,7 @@ void print_err_message(std::string message) {
 }
 
 int main() {
+    srand(time(NULL));
     HANDLE eventFromConsole = CreateEvent(NULL, FALSE, FALSE, EVENT_FROM_CONSOLE);
     HANDLE eventFromFile = CreateEvent(NULL, FALSE, FALSE, EVENT_FROM_FILE);
     HANDLE eventToConsole = CreateEvent(NULL, FALSE, FALSE, EVENT_TO_CONSOLE);
